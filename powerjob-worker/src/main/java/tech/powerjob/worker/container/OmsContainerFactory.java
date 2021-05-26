@@ -97,7 +97,7 @@ public class OmsContainerFactory {
         //脚本上传路径不同
         if(sourceType == 3 || sourceType == 4){
 //            filePath = OmsWorkerFileUtils.getContainerDir() + containerId + "/" + version.substring(version.indexOf("-")+1);
-            OmsWorkerFileUtils.getFilePath(containerId,version);
+            filePath = OmsWorkerFileUtils.getFilePath(containerId,version);
         }
         log.warn("部署容器文件存放地址："+filePath);
 
@@ -113,7 +113,7 @@ public class OmsContainerFactory {
 
             if (!jarFile.exists()) {
                 FileUtils.forceMkdirParent(jarFile);
-                FileUtils.copyURLToFile(new URL(request.getDownloadURL()), jarFile, 5000, 300000);
+                FileUtils.copyURLToFile(new URL(request.getDownloadURL()), jarFile);
                 log.info("[OmsContainer-{}] download jar successfully, path={}", containerId, jarFile.getPath());
             }
 

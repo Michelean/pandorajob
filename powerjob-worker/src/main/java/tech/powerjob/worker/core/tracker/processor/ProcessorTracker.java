@@ -369,6 +369,9 @@ public class ProcessorTracker {
                     log.warn("[ProcessorTracker-{}] load container failed.", instanceId);
                 }
                 break;
+            case SHELL:
+                processor = new ShellProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
             case CONTAINER_SCRIPT:
                 findMatchingProcessor(instanceInfo);
 //                processor = new ContainerProcessor(instanceInfo);
@@ -424,6 +427,10 @@ public class ProcessorTracker {
 
             sb.append(" ").append(filePath);
         });
+        String jobParams = instanceInfo.getJobParams();
+        if(StringUtils.isNotBlank(jobParams)){
+            sb.append(" ").append(jobParams);
+        }
         boolean isLinux = ZipAndRarTools.isLinux();
         String scriptFilePath = OmsWorkerFileUtils.getFilePath(containerScript.getContainerId(), containerScript.getVersion());
         String containerExecPath = containerScript.getContainerExecPath();

@@ -65,7 +65,7 @@ public class ContainerController {
     public void downloadJar(String version, Integer type, HttpServletResponse response) throws IOException {
         File file = containerService.fetchContainerJarFile(URLDecoder.decode(version), type);
         if (file.exists()) {
-            OmsFileUtils.file2HttpResponse(file, response);
+            OmsFileUtils.fileDownLoad(file, response);
         }
     }
 
@@ -121,7 +121,7 @@ public class ContainerController {
     public ResultDTO<PageResult<ContainerInfoVO>> listPage(@RequestBody QueryContainerRequest request) {
         ContainerSourceType sourceType = request.getSourceType();
         String keyword = request.getKeyword();
-        Sort sort = Sort.by(Sort.Direction.DESC, "gmtCreate");
+        Sort sort = Sort.by(Sort.Direction.DESC, "gmtModified");
         Pageable pageable = PageRequest.of(request.getIndex(), request.getPageSize(), sort);
         Specification<ContainerInfoDO> specification = (root, query, cb) -> {
             List<Predicate> list = new ArrayList<>();

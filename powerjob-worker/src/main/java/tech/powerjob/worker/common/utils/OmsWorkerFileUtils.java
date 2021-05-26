@@ -10,7 +10,7 @@ import tech.powerjob.common.utils.CommonUtils;
  */
 public class OmsWorkerFileUtils {
 
-    private static final String WORKER_DIR = System.getProperty("user.home") + "/pandora-job/worker/container/";
+    private static final String WORKER_DIR = System.getProperty("user.home") + "/pandora-job/worker/";
 
     public static String getScriptDir() {
         return WORKER_DIR + "script/";

@@ -31,7 +31,7 @@ public class OmsFileUtils {
     }
 
     public static String genScriptFilePath(String userHome, String appName, long containerId){
-        return userHome + "/pandoraJob/" + appName + "/container/" + containerId + "/";
+        return userHome + "/pandora-job/worker/container/" + containerId + "/";
     }
 
     /**
@@ -96,6 +96,61 @@ public class OmsFileUtils {
             fw.write(content);
         }catch (IOException ie) {
             ExceptionUtils.rethrow(ie);
+        }
+    }
+    public static void fileDownLoad(File file, HttpServletResponse response) {
+        OutputStream os = null;
+        try {
+            String fileName = file.getName();
+            response.setContentType("application/octet-stream;charset=ISO8859-1");
+            //解决中文乱码
+            String fileNameStr = new String(fileName.getBytes("utf-8"), "ISO8859-1");
+            response.setHeader("Location", fileNameStr);
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileNameStr);
+            os = response.getOutputStream();
+            download(os, file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != os) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
+    private static void download(OutputStream os, File file) {
+        FileInputStream is = null;
+        try {
+            is = new FileInputStream(file);
+            int BUFFERSIZE = 2 << 10;
+            int length = 0;
+            byte[] buffer = new byte[BUFFERSIZE];
+            while ((length = is.read(buffer, 0, BUFFERSIZE)) >= 0) {
+                os.write(buffer, 0, length);
+            }
+            os.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != os) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

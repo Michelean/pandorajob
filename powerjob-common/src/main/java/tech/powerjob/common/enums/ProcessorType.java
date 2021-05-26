@@ -19,9 +19,7 @@ public enum ProcessorType {
     BUILT_IN(1, "内建处理器"),
     EXTERNAL(4, "外部处理器（动态加载）"),
 
-    @Deprecated
     SHELL(2, "SHELL脚本"),
-    @Deprecated
     PYTHON(3, "Python脚本"),
 
     PYTHON2(5, "PYTHON2"),
@@ -31,8 +29,7 @@ public enum ProcessorType {
     JAVA_WINDOWS(9,"JAVA_WINDOWS"),
     PYTHON_WINDOWS(10,"JAVA_WINDOWS"),
     EXE(11,"JAVA_WINDOWS"),
-    CONTAINER_SCRIPT(12,"脚本容器"),
-            ;
+    CONTAINER_SCRIPT(12,"脚本容器");
 
     private final int v;
     private final String des;
