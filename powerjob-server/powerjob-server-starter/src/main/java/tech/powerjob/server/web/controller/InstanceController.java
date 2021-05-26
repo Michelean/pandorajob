@@ -1,5 +1,6 @@
 package tech.powerjob.server.web.controller;
 
+import tech.powerjob.common.InstanceActiveType;
 import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.response.ResultDTO;
 import tech.powerjob.server.common.utils.OmsFileUtils;
@@ -120,7 +121,7 @@ public class InstanceController {
         InstanceInfoDO queryEntity = new InstanceInfoDO();
         BeanUtils.copyProperties(request, queryEntity);
         queryEntity.setType(request.getType().getV());
-
+        queryEntity.setActive(InstanceActiveType.USEFUL.getV());
         if (!StringUtils.isEmpty(request.getStatus())) {
             queryEntity.setStatus(InstanceStatus.valueOf(request.getStatus()).getV());
         }

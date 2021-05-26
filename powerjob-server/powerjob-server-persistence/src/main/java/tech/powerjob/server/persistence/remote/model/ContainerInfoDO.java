@@ -28,6 +28,9 @@ public class ContainerInfoDO {
     private Long appId;
 
     private String containerName;
+    private String containerDesc;
+
+    private String containerExecPath;
 
     /**
      * 容器类型，枚举值为 ContainerSourceType
@@ -56,4 +59,5 @@ public class ContainerInfoDO {
     private Date gmtCreate;
 
     private Date gmtModified;
+    private String extra;
 }

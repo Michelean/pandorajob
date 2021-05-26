@@ -8,7 +8,7 @@
 
     <!--应用名，二选一-->
     <!-- Spring Boot，从 spring 配置文件中 spring.application.name 获取 -->
-    <property scope="context" name="appName" value="powerjob-worker-agent"/>
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
     <!-- 租户id，目前统一使用goldwind -->
     <property scope="context" name="tenant" value="goldwind"/>
     <!--环境：开发、测试、预发布、生产，根据spring.profiles.active获取 -->

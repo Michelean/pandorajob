@@ -14,7 +14,11 @@ import lombok.Getter;
 public enum ContainerSourceType {
 
     FatJar(1, "Jar文件"),
-    Git(2, "Git代码库");
+    Git(2, "Git代码库"),
+    Script(3, "脚本上传"),
+    Config(4, "脚本配置上传"),
+    ;
+
 
     private final int v;
     private final String des;

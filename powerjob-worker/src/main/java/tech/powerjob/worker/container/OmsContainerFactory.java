@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import tech.powerjob.common.utils.ZipAndRarTools;
+import tech.powerjob.worker.common.utils.OmsWorkerFileUtils;
 
 import java.io.File;
 import java.net.URL;
@@ -30,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class OmsContainerFactory {
 
-    private static final String CONTAINER_DIR = System.getProperty("user.home") + "/powerjob/worker/container/";
+    private static final String CONTAINER_DIR = System.getProperty("user.home") + "/pandora-job/worker/container/";
     private static final Map<Long, OmsContainer> CARGO = Maps.newConcurrentMap();
 
     /**
@@ -83,9 +85,8 @@ public class OmsContainerFactory {
         Long containerId = request.getContainerId();
         String containerName = request.getContainerName();
         String version = request.getVersion();
-
-        log.info("[OmsContainer-{}] start to deploy container(name={},version={},downloadUrl={})", containerId, containerName, version, request.getDownloadURL());
-
+        Integer sourceType = request.getSourceType();
+        log.info("[OmsContainer-{}] start to deploy container(name={},version={},sourceType={},downloadUrl={})", containerId, containerName, version, sourceType, request.getDownloadURL());
         OmsContainer oldContainer = CARGO.get(containerId);
         if (oldContainer != null && version.equals(oldContainer.getVersion())) {
             log.info("[OmsContainer-{}] version={} already deployed, so skip this deploy task.", containerId, version);
@@ -93,10 +94,23 @@ public class OmsContainerFactory {
         }
 
         String filePath = CONTAINER_DIR + containerId + "/" + version + ".jar";
+        //脚本上传路径不同
+        if(sourceType == 3 || sourceType == 4){
+//            filePath = OmsWorkerFileUtils.getContainerDir() + containerId + "/" + version.substring(version.indexOf("-")+1);
+            OmsWorkerFileUtils.getFilePath(containerId,version);
+        }
+        log.warn("部署容器文件存放地址："+filePath);
+
         // 下载Container到本地
         File jarFile = new File(filePath);
 
         try {
+
+            if (oldContainer != null) {
+                // 销毁旧容器
+                oldContainer.destroy();
+            }
+
             if (!jarFile.exists()) {
                 FileUtils.forceMkdirParent(jarFile);
                 FileUtils.copyURLToFile(new URL(request.getDownloadURL()), jarFile, 5000, 300000);
@@ -105,15 +119,18 @@ public class OmsContainerFactory {
 
             // 创建新容器
             OmsContainer newContainer = new OmsJarContainer(containerId, containerName, version, jarFile);
-            newContainer.init();
+            if(sourceType != 3 && sourceType != 4){
+                newContainer.init();
+            }
+
 
             // 替换容器
             CARGO.put(containerId, newContainer);
             log.info("[OmsContainer-{}] deployed new version:{} successfully!", containerId, version);
-
-            if (oldContainer != null) {
-                // 销毁旧容器
-                oldContainer.destroy();
+            //如果是zip、rar压缩文件 自动压缩
+            String type = filePath.substring(filePath.lastIndexOf(".")+1);
+            if(type.equals("zip") || type.equals("rar") || type.equals("gz")){
+                ZipAndRarTools.deCompress(filePath, jarFile.getParent());
             }
 
         } catch (Exception e) {

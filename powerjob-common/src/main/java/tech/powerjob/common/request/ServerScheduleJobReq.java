@@ -41,6 +41,11 @@ public class ServerScheduleJobReq implements PowerSerializable {
     // 处理器信息
     private String processorInfo;
 
+    private ServerDeployContainerRequest containerScript;
+
+    private ServerDeployContainerRequest containerConfig;
+
+
 
     /**
      * 超时时间

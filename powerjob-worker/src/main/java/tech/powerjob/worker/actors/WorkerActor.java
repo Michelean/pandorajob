@@ -7,6 +7,7 @@ import tech.powerjob.worker.container.OmsContainerFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tech.powerjob.common.request.*;
+import tech.powerjob.worker.core.ProcessFactory;
 
 /**
  * Worker节点Actor，接受服务器请求
@@ -32,6 +33,7 @@ public class WorkerActor extends AbstractActor {
                 .match(ServerScheduleJobReq.class, this::forward2TaskTracker)
                 .match(ServerStopInstanceReq.class, this::forward2TaskTracker)
                 .match(ServerQueryInstanceStatusReq.class, this::forward2TaskTracker)
+                .match(ProcessDestroyRequest.class, this::onReceiveProcessDestroyRequest)
                 .matchAny(obj -> log.warn("[WorkerActor] receive unknown request: {}.", obj))
                 .build();
     }
@@ -43,6 +45,11 @@ public class WorkerActor extends AbstractActor {
     private void onReceiveServerDestroyContainerRequest(ServerDestroyContainerRequest request) {
         OmsContainerFactory.destroyContainer(request.getContainerId());
     }
+
+    private void onReceiveProcessDestroyRequest(ProcessDestroyRequest req){
+        ProcessFactory.destroyProcess(req.getInstanceId());
+    }
+
 
     private void forward2TaskTracker(Object obj) {
         taskTrackerActorRef.forward(obj, getContext());

@@ -67,6 +67,12 @@ public class JobInfoDO {
      * 执行器类型，Java/Shell
      */
     private Integer processorType;
+
+    //脚本容器id
+    private Long containerScript;
+    //脚本配置id
+    private Long containerConfig;
+
     /**
      * 执行器信息
      */

@@ -21,6 +21,7 @@ import tech.powerjob.worker.common.WorkerRuntime;
 import tech.powerjob.worker.common.constants.TaskConstant;
 import tech.powerjob.worker.common.constants.TaskStatus;
 import tech.powerjob.worker.common.utils.AkkaUtils;
+import tech.powerjob.worker.core.ProcessFactory;
 import tech.powerjob.worker.persistence.TaskDO;
 
 import java.time.Duration;
@@ -237,6 +238,7 @@ public class CommonTaskTracker extends TaskTracker {
                 finished.set(true);
                 success = false;
                 result = SystemInstanceResult.INSTANCE_EXECUTE_TIMEOUT;
+                ProcessFactory.destroyProcess(instanceId);
             }
 
             String serverPath = AkkaUtils.getServerActorPath(workerRuntime.getServerDiscoveryService().getCurrentServerAddress());

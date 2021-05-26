@@ -25,6 +25,11 @@ public class ContainerInfoVO {
     // 版本 （Jar包使用md5，Git使用commitId，前者32位，后者40位，不会产生碰撞）
     private String version;
 
+    private String containerDesc;
+
+    private String containerExecPath;
+
+
     // 状态，枚举值为 ContainerStatus
     private String status;
 

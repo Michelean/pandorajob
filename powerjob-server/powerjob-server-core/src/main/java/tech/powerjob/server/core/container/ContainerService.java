@@ -1,5 +1,6 @@
 package tech.powerjob.server.core.container;
 
+import org.apache.commons.lang3.StringUtils;
 import tech.powerjob.common.OmsConstant;
 import tech.powerjob.common.enums.Protocol;
 import tech.powerjob.common.model.DeployedContainerInfo;
@@ -14,10 +15,13 @@ import tech.powerjob.server.common.constants.ContainerSourceType;
 import tech.powerjob.server.common.constants.SwitchableStatus;
 import tech.powerjob.server.common.utils.OmsFileUtils;
 import tech.powerjob.server.extension.LockService;
+import tech.powerjob.server.persistence.remote.model.AppInfoDO;
 import tech.powerjob.server.persistence.remote.model.ContainerInfoDO;
+import tech.powerjob.server.persistence.remote.repository.AppInfoRepository;
 import tech.powerjob.server.persistence.remote.repository.ContainerInfoRepository;
 import tech.powerjob.server.persistence.mongodb.GridFsManager;
 import tech.powerjob.server.remote.transport.TransportService;
+import tech.powerjob.server.remote.worker.WorkerClusterManagerService;
 import tech.powerjob.server.remote.worker.WorkerClusterQueryService;
 import tech.powerjob.server.common.module.WorkerInfo;
 import com.google.common.collect.ArrayListMultimap;
@@ -43,7 +47,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -51,6 +54,7 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -75,6 +79,8 @@ public class ContainerService {
     private GridFsManager gridFsManager;
     @Resource
     private TransportService transportService;
+    @Resource
+    private AppInfoRepository appInfoRepository;
 
     @Resource
     private WorkerClusterQueryService workerClusterQueryService;
@@ -103,11 +109,25 @@ public class ContainerService {
         container.setGmtModified(new Date());
 
         // 文件上传形式的 sourceInfo 为该文件的 md5 值，Git形式的 md5 在部署阶段生成
-        if (container.getSourceType() == ContainerSourceType.FatJar.getV()) {
-            container.setVersion(container.getSourceInfo());
-        }else {
-            container.setVersion("init");
+//        if (container.getSourceType() == ContainerSourceType.FatJar.getV()) {
+//            container.setVersion(container.getSourceInfo());
+//        }else {
+//            container.setVersion("init");
+//        }
+
+        if(StringUtils.isNotBlank(container.getSourceInfo())){
+            if(container.getSourceType() == ContainerSourceType.Git.getV()){
+                container.setVersion("init");
+            }else{
+                container.setVersion(container.getSourceInfo());
+            }
         }
+        String containerExecPath = container.getContainerExecPath();
+        if(StringUtils.isNotBlank(containerExecPath)){
+            containerExecPath = containerExecPath.replaceAll("\\\\", "/");
+            container.setContainerExecPath(containerExecPath.indexOf("/") == 0? containerExecPath:"/"+containerExecPath);
+        }
+
         containerInfoRepository.saveAndFlush(container);
     }
 
@@ -177,15 +197,58 @@ public class ContainerService {
         }
     }
 
+
+    public String uploadContainerScriptFile(MultipartFile file) throws IOException {
+        String workerDirStr = OmsFileUtils.genTemporaryWorkPath();
+        String tmpFileStr = workerDirStr + OmsFileUtils.getRealFileName(file.getOriginalFilename());
+        File workerDir = new File(workerDirStr);
+        File tmpFile = new File(tmpFileStr);
+
+        try {
+            // 下载到本地
+            FileUtils.forceMkdirParent(tmpFile);
+            file.transferTo(tmpFile);
+
+            // 生成MD5，这兄弟耗时有点小严重
+//            String md5 = OmsFileUtils.md5(tmpFile);
+//            String fileName = genContainerJarName(md5);
+            String fileName = System.currentTimeMillis() + "-" + tmpFile.getName();
+//            String fileName = tmpFile.getName();
+
+            // 上传到 mongoDB，这兄弟耗时也有点小严重，导致这个接口整体比较慢...不过也没必要开线程去处理
+            gridFsManager.store(tmpFile, GridFsManager.CONTAINER_BUCKET, fileName);
+
+            // 将文件拷贝到正确的路径
+            String finalFileStr = OmsFileUtils.genScriptPath() + fileName;
+            File finalFile = new File(finalFileStr);
+            if (finalFile.exists()) {
+                FileUtils.forceDelete(finalFile);
+            }
+            FileUtils.moveFile(tmpFile, finalFile);
+
+            return fileName;
+
+        }finally {
+            CommonUtils.executeIgnoreException(() -> FileUtils.forceDelete(workerDir));
+        }
+    }
+
+
     /**
      * 获取构建容器所需要的 Jar 文件
      * @param version 版本
      * @return 本地Jar文件
      */
-    public File fetchContainerJarFile(String version) {
+    public File fetchContainerJarFile(String version, Integer type) {
+        String fileName,filePath;
+        if(ContainerSourceType.of(type) == ContainerSourceType.Script || ContainerSourceType.of(type) == ContainerSourceType.Config){
+            fileName = version;
+            filePath = OmsFileUtils.genScriptPath() + fileName;
+        }else{
+            fileName = genContainerJarName(version);
+            filePath = OmsFileUtils.genContainerJarPath() + fileName;
+        }
 
-        String fileName = genContainerJarName(version);
-        String filePath = OmsFileUtils.genContainerJarPath() + fileName;
         File localFile = new File(filePath);
 
         if (localFile.exists()) {
@@ -223,6 +286,8 @@ public class ContainerService {
             }
             ContainerInfoDO container = containerInfoOpt.get();
 
+            String version = container.getVersion();
+
             Date lastDeployTime = container.getLastDeployTime();
             if (lastDeployTime != null) {
                 if ((System.currentTimeMillis() - lastDeployTime.getTime()) < DEPLOY_MIN_INTERVAL) {
@@ -237,13 +302,13 @@ public class ContainerService {
             }
 
             double sizeMB = 1.0 * jarFile.length() / FileUtils.ONE_MB;
-            remote.sendText(String.format("SYSTEM: the jarFile(size=%fMB) is prepared and ready to be deployed to the worker.", sizeMB));
+            remote.sendText(String.format("SYSTEM: the File(size=%fMB) is prepared and ready to be deployed to the worker.", sizeMB));
 
-            // 修改数据库，更新 MD5和最新部署时间
-            Date now = new Date();
-            container.setGmtModified(now);
-            container.setLastDeployTime(now);
-            containerInfoRepository.saveAndFlush(container);
+//            // 修改数据库，更新 MD5和最新部署时间
+//            Date now = new Date();
+//            container.setGmtModified(now);
+//            container.setLastDeployTime(now);
+//            containerInfoRepository.saveAndFlush(container);
 
             // 开始部署（需要分批进行）
             Set<String> workerAddressList = workerClusterQueryService.getAllAliveWorkers(container.getAppId())
@@ -256,8 +321,8 @@ public class ContainerService {
             }
 
             String port = environment.getProperty("local.server.port");
-            String downloadURL = String.format("http://%s:%s/container/downloadJar?version=%s", NetUtils.getLocalHost(), port, container.getVersion());
-            ServerDeployContainerRequest req = new ServerDeployContainerRequest(containerId, container.getContainerName(), container.getVersion(), downloadURL);
+            String downloadURL = String.format("http://%s:%s/container/downloadJar?version=%s&type=%s", NetUtils.getLocalHost(), port, URLEncoder.encode(version), container.getSourceType());
+            ServerDeployContainerRequest req = new ServerDeployContainerRequest(containerId, container.getContainerName(), version, container.getSourceType(), container.getContainerExecPath(), downloadURL);
             long sleepTime = calculateSleepTime(jarFile.length());
 
             AtomicInteger count = new AtomicInteger();
@@ -272,6 +337,26 @@ public class ContainerService {
             });
 
             remote.sendText("SYSTEM: deploy finished, congratulations!");
+            ContainerSourceType sourceType = ContainerSourceType.of(container.getSourceType());
+            if(sourceType == ContainerSourceType.Script || sourceType == ContainerSourceType.Config ){
+                Optional<AppInfoDO> appOptional = appInfoRepository.findById(container.getAppId());
+                appOptional.orElseThrow(() -> new IllegalArgumentException("can't find app by id: " + container.getAppId()));
+//                String filepath = System.getProperty("user.home", "pandoraJob")+"/pandoraJob/" + appOptional.get().getAppName() + "/container/";
+//                filepath += containerId + "/" + container.getVersion();
+                StringBuilder sb = new StringBuilder();
+                List<WorkerInfo> allAliveWorkers = workerClusterQueryService.getAllAliveWorkers(container.getAppId());
+                allAliveWorkers.stream().forEach(workerInfo -> {
+                    String info = String.format("%s : script is store in %s", workerInfo.getAddress(), OmsFileUtils.genScriptFilePath(workerInfo.getUserHome(), appOptional.get().getAppName(), containerId) + version.substring(version.indexOf("-")+1));
+                    remote.sendText(info);
+                    sb.append(info).append(System.lineSeparator());
+                });
+                container.setExtra(sb.toString());
+            }
+            // 修改数据库，更新 MD5和最新部署时间
+            Date now = new Date();
+            container.setGmtModified(now);
+            container.setLastDeployTime(now);
+            containerInfoRepository.saveAndFlush(container);
 
         }finally {
             lockService.unlock(deployLock);
@@ -328,6 +413,12 @@ public class ContainerService {
         }else {
             sb.append(deployedList);
         }
+        Optional<ContainerInfoDO> containerInfoOpt = containerInfoRepository.findById(containerId);
+        containerInfoOpt.ifPresent(c ->{
+            sb.append(System.lineSeparator());
+            sb.append("========== DeployedResource ==========").append(System.lineSeparator());
+            sb.append(c.getExtra());
+        });
 
         return sb.toString();
     }
@@ -337,6 +428,24 @@ public class ContainerService {
         RemoteEndpoint.Async remote = session.getAsyncRemote();
         // 获取Jar，Git需要先 clone成Jar计算MD5，JarFile则直接下载
         ContainerSourceType sourceType = ContainerSourceType.of(container.getSourceType());
+
+        if(sourceType == ContainerSourceType.Script || sourceType == ContainerSourceType.Config){
+            String scriptFileName = container.getSourceInfo();
+            String localFileStr = OmsFileUtils.genScriptPath() + scriptFileName;
+            log.info("scriptFileName:"+scriptFileName);
+            log.info("localFileStr:"+localFileStr);
+            File localFile = new File(localFileStr);
+            if (localFile.exists()) {
+                remote.sendText("SYSTEM: find the script file in local disk.");
+                return localFile;
+            }
+            // 从 MongoDB 下载
+            remote.sendText(String.format("SYSTEM: try to find the scriptFile(%s) in GridFS", scriptFileName));
+            downloadJarFromGridFS(scriptFileName, localFile);
+            remote.sendText("SYSTEM: download script file from GridFS successfully~");
+            return localFile;
+        }
+
         if (sourceType == ContainerSourceType.Git) {
 
             String workerDirStr = OmsFileUtils.genTemporaryWorkPath();

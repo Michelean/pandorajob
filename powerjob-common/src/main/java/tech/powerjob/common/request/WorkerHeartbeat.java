@@ -37,6 +37,11 @@ public class WorkerHeartbeat implements PowerSerializable {
     private String client;
     // 扩展字段
     private String extra;
+    // 系统信息
+    private String systemInfo;
+    //系统主目录
+    private String userHome;
+
 
     private SystemMetrics systemMetrics;
 }

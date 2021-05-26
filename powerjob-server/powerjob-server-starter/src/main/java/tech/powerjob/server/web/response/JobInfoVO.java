@@ -51,6 +51,12 @@ public class JobInfoVO {
     // 执行器信息
     private String processorInfo;
 
+    //脚本容器id
+    private Long containerScript;
+    //脚本配置id
+    private Long containerConfig;
+
+
     /* ************************** 运行时配置 ************************** */
     // 最大同时运行任务数，默认 1
     private Integer maxInstanceNum;

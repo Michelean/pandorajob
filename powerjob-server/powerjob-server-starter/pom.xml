@@ -43,6 +43,11 @@
             <groupId>tech.powerjob</groupId>
             <artifactId>powerjob-server-migrate</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.goldwind.ngsp</groupId>
+            <artifactId>ngsp-c-logback-ext</artifactId>
+            <version>V1.0.200.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <!-- SpringBoot maven plugin -->

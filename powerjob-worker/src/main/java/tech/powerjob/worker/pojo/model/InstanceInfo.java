@@ -1,6 +1,7 @@
 package tech.powerjob.worker.pojo.model;
 
 import lombok.Data;
+import tech.powerjob.common.request.ServerDeployContainerRequest;
 
 import java.io.Serializable;
 
@@ -31,6 +32,10 @@ public class InstanceInfo implements Serializable {
     private String processorInfo;
     // 定时类型
     private int timeExpressionType;
+
+    private ServerDeployContainerRequest containerScript;
+
+    private ServerDeployContainerRequest containerConfig;
 
     /**
      * 超时时间

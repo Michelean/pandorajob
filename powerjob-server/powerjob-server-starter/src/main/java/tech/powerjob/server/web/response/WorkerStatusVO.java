@@ -22,7 +22,7 @@ public class WorkerStatusVO {
     private String cpuLoad;
     private String memoryLoad;
     private String diskLoad;
-
+    private String systemInfo;
     private String protocol;
     private String tag;
     private String lastActiveTime;
@@ -41,7 +41,7 @@ public class WorkerStatusVO {
     public WorkerStatusVO(WorkerInfo workerInfo) {
 
         SystemMetrics systemMetrics = workerInfo.getSystemMetrics();
-
+        this.systemInfo = workerInfo.getSystemInfo();
         this.status = 1;
         this.address = workerInfo.getAddress();
         this.cpuLoad = String.format(CPU_FORMAT, df.format(systemMetrics.getCpuLoad()), systemMetrics.getCpuProcessors());

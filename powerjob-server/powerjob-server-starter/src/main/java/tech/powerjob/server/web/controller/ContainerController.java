@@ -1,7 +1,14 @@
 package tech.powerjob.server.web.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import tech.powerjob.common.OmsConstant;
 import tech.powerjob.common.response.ResultDTO;
+import tech.powerjob.server.common.module.QueryContainerRequest;
+import tech.powerjob.server.persistence.PageResult;
 import tech.powerjob.server.remote.transport.starter.AkkaStarter;
 import tech.powerjob.server.common.constants.ContainerSourceType;
 import tech.powerjob.server.common.constants.SwitchableStatus;
@@ -24,9 +31,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.persistence.criteria.Predicate;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,8 +62,8 @@ public class ContainerController {
     private ContainerInfoRepository containerInfoRepository;
 
     @GetMapping("/downloadJar")
-    public void downloadJar(String version, HttpServletResponse response) throws IOException {
-        File file = containerService.fetchContainerJarFile(version);
+    public void downloadJar(String version, Integer type, HttpServletResponse response) throws IOException {
+        File file = containerService.fetchContainerJarFile(URLDecoder.decode(version), type);
         if (file.exists()) {
             OmsFileUtils.file2HttpResponse(file, response);
         }
@@ -63,6 +73,14 @@ public class ContainerController {
     public void downloadContainerTemplate(@RequestBody GenerateContainerTemplateRequest req, HttpServletResponse response) throws IOException {
         File zipFile = ContainerTemplateGenerator.generate(req.getGroup(), req.getArtifact(), req.getName(), req.getPackageName(), req.getJavaVersion());
         OmsFileUtils.file2HttpResponse(zipFile, response);
+    }
+
+    @PostMapping("/scriptUpload")
+    public ResultDTO<String> scriptUpload(@RequestParam("file") MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            return ResultDTO.failed("empty file");
+        }
+        return ResultDTO.success(containerService.uploadContainerScriptFile(file));
     }
 
     @PostMapping("/jarUpload")
@@ -98,6 +116,54 @@ public class ContainerController {
                 .stream().map(ContainerController::convert).collect(Collectors.toList());
         return ResultDTO.success(res);
     }
+
+    @PostMapping("/listPage")
+    public ResultDTO<PageResult<ContainerInfoVO>> listPage(@RequestBody QueryContainerRequest request) {
+        ContainerSourceType sourceType = request.getSourceType();
+        String keyword = request.getKeyword();
+        Sort sort = Sort.by(Sort.Direction.DESC, "gmtCreate");
+        Pageable pageable = PageRequest.of(request.getIndex(), request.getPageSize(), sort);
+        Specification<ContainerInfoDO> specification = (root, query, cb) -> {
+            List<Predicate> list = new ArrayList<>();
+            list.add(cb.notEqual(root.get("status"), SwitchableStatus.DELETED.getV()));
+            if(sourceType != null) {
+                list.add(cb.equal(root.get("sourceType"), sourceType.getV()));
+            }
+            Predicate and = cb.and(list.toArray(new Predicate[list.size()]));
+
+            if(StringUtils.isNotBlank(keyword)){
+                List<Predicate> listPermission = new ArrayList<>();
+                String condition = "%" + request.getKeyword() + "%";
+                listPermission.add(cb.like(root.get("containerName"), condition));
+                listPermission.add(cb.like(root.get("containerDesc"), condition));
+                return query.where(and, cb.or(listPermission.toArray(new Predicate[listPermission.size()]))).getRestriction();
+            }
+            return and;
+        };
+
+        Page<ContainerInfoDO> containerInfoPage = containerInfoRepository.findAll(specification, pageable);
+
+//        Page<ContainerInfoDO> containerInfoPage = null;
+//        if(sourceType == null && StringUtils.isBlank(keyword)){
+//            containerInfoPage = containerInfoRepository.findByAppIdAndStatusNot(request.getAppId(), SwitchableStatus.DELETED.getV(), pageRequest);
+//
+////            List<ContainerInfoVO> res = containerInfoRepository.findByAppIdAndStatusNot(request.getAppId(), SwitchableStatus.DELETED.getV())
+////                    .stream().map(ContainerController::convert).collect(Collectors.toList());
+//        }else if(sourceType != null && StringUtils.isBlank(keyword)){
+//            containerInfoPage = containerInfoRepository.findByAppIdAndSourceTypeAndStatusNot(request.getAppId(), sourceType.getV(), SwitchableStatus.DELETED.getV(), pageRequest);
+//        }else if(StringUtils.isNotBlank(keyword)){
+//            String condition = "%" + request.getKeyword() + "%";
+//            if(sourceType == null){
+//                containerInfoPage = containerInfoRepository.findByAppIdAndContainerNameLikeOrContainerDescLikeAndStatusNot(request.getAppId(), condition, condition, SwitchableStatus.DELETED.getV(), pageRequest);
+//            }else{
+//                containerInfoPage = containerInfoRepository.findByAppIdAndContainerNameLikeOrContainerDescLikeAndSourceTypeAndStatusNot(request.getAppId(), condition, condition, sourceType.getV(), SwitchableStatus.DELETED.getV(), pageRequest);
+//            }
+//        }
+
+
+        return ResultDTO.success(convertPage(containerInfoPage));
+    }
+
 
     @GetMapping("/listDeployedWorker")
     public ResultDTO<String> listDeployedWorker(Long appId, Long containerId, HttpServletResponse response) {
@@ -136,4 +202,12 @@ public class ContainerController {
         vo.setSourceType(sourceType.name());
         return vo;
     }
+
+    private PageResult<ContainerInfoVO> convertPage(Page<ContainerInfoDO> containerInfoPage) {
+        List<ContainerInfoVO> containerInfoVOList = containerInfoPage.getContent().stream().map(ContainerController::convert).collect(Collectors.toList());
+        PageResult<ContainerInfoVO> pageResult = new PageResult<>(containerInfoPage);
+        pageResult.setData(containerInfoVOList);
+        return pageResult;
+    }
+
 }

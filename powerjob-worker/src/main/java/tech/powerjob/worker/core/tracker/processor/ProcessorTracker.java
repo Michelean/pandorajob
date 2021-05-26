@@ -4,22 +4,31 @@ import akka.actor.ActorSelection;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.util.CollectionUtils;
+import tech.powerjob.common.EnvConstant;
 import tech.powerjob.common.exception.PowerJobException;
 import tech.powerjob.common.RemoteConstant;
 import tech.powerjob.common.enums.ExecuteType;
 import tech.powerjob.common.enums.ProcessorType;
 import tech.powerjob.common.enums.TimeExpressionType;
+import tech.powerjob.common.request.ServerDeployContainerRequest;
 import tech.powerjob.common.utils.CommonUtils;
+import tech.powerjob.common.utils.ZipAndRarTools;
 import tech.powerjob.worker.common.WorkerRuntime;
 import tech.powerjob.worker.common.constants.TaskStatus;
 import tech.powerjob.worker.common.utils.AkkaUtils;
+import tech.powerjob.worker.common.utils.OmsWorkerFileUtils;
 import tech.powerjob.worker.common.utils.SpringUtils;
 import tech.powerjob.worker.container.OmsContainer;
 import tech.powerjob.worker.container.OmsContainerFactory;
 import tech.powerjob.worker.core.ProcessorBeanFactory;
 import tech.powerjob.worker.core.executor.ProcessorRunnable;
+import tech.powerjob.worker.core.processor.ExeWindowsProcessor;
+import tech.powerjob.worker.core.processor.JarWindowsProcessor;
+import tech.powerjob.worker.core.processor.PyWindowsProcessor;
+import tech.powerjob.worker.core.processor.ShellProcessor;
 import tech.powerjob.worker.core.processor.sdk.BasicProcessor;
 import tech.powerjob.worker.log.OmsLogger;
 import tech.powerjob.worker.log.impl.OmsServerLogger;
@@ -30,6 +39,7 @@ import tech.powerjob.worker.pojo.request.ProcessorTrackerStatusReportReq;
 import tech.powerjob.worker.pojo.request.TaskTrackerStartTaskReq;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.*;
 
@@ -359,6 +369,35 @@ public class ProcessorTracker {
                     log.warn("[ProcessorTracker-{}] load container failed.", instanceId);
                 }
                 break;
+            case CONTAINER_SCRIPT:
+                findMatchingProcessor(instanceInfo);
+//                processor = new ContainerProcessor(instanceInfo);
+                break;
+            case JDK7:
+                processorInfo = EnvConstant.getJdk7Command() + processorInfo;
+                processor = new ShellProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case JDK8:
+                processorInfo = EnvConstant.getJdk8Command() + processorInfo;
+                processor = new ShellProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case PYTHON2:
+                processorInfo = EnvConstant.getPython2Command() + processorInfo;
+                processor = new ShellProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case PYTHON3:
+                processorInfo = EnvConstant.getPython3Command() + processorInfo;
+                processor = new ShellProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case JAVA_WINDOWS:
+                processor = new JarWindowsProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case PYTHON_WINDOWS:
+                processor = new PyWindowsProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
+            case EXE:
+                processor = new ExeWindowsProcessor(instanceId, processorInfo, instanceInfo.getInstanceTimeoutMS());
+                break;
             default:
                 log.warn("[ProcessorTracker-{}] unknown processor type: {}.", instanceId, processorType);
                 throw new PowerJobException("unknown processor type of " + processorType);
@@ -367,6 +406,69 @@ public class ProcessorTracker {
         if (processor == null) {
             log.warn("[ProcessorTracker-{}] fetch Processor(type={},info={}) failed.", instanceId, processorType, processorInfo);
             throw new PowerJobException("fetch Processor failed, please check your processorType and processorInfo config");
+        }
+    }
+
+
+    private void findMatchingProcessor(InstanceInfo instanceInfo) throws Exception {
+        StringBuffer sb = new StringBuffer();
+        ServerDeployContainerRequest containerScript = instanceInfo.getContainerScript();
+        ServerDeployContainerRequest containerConfig = instanceInfo.getContainerConfig();
+        Optional.ofNullable(containerConfig).ifPresent(config -> {
+            String filePath = OmsWorkerFileUtils.getFilePath(config.getContainerId(), config.getVersion());
+            String containerExecPath = config.getContainerExecPath();
+            //有运行路径说明是压缩包 需要把压缩包文件路径更改执行文件路径
+            if(StringUtils.isNotBlank(containerExecPath)){
+                filePath = filePath.substring(0, filePath.lastIndexOf("/")) + containerExecPath;
+            }
+
+            sb.append(" ").append(filePath);
+        });
+        boolean isLinux = ZipAndRarTools.isLinux();
+        String scriptFilePath = OmsWorkerFileUtils.getFilePath(containerScript.getContainerId(), containerScript.getVersion());
+        String containerExecPath = containerScript.getContainerExecPath();
+        //有运行路径说明是压缩包 需要把压缩包文件路径更改执行文件路径
+        if(StringUtils.isNotBlank(containerExecPath)){
+            scriptFilePath = scriptFilePath.substring(0, scriptFilePath.lastIndexOf("/")) + containerExecPath;
+        }
+
+        switch (scriptFilePath.substring(scriptFilePath.lastIndexOf(".")+1).toLowerCase()){
+            case "jar":
+                if(isLinux){
+                    sb.insert(0, "java -jar " + scriptFilePath);
+                    log.warn("command:{}", sb.toString());
+                    processor = new ShellProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
+                }else{
+                    sb.insert(0, scriptFilePath);
+                    log.warn("command:{}", sb.toString());
+                    processor = new JarWindowsProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
+                }
+                break;
+            case "py":
+                if(isLinux){
+                    sb.insert(0, "python3 " + scriptFilePath);
+                    log.warn("command:{}", sb.toString());
+                    processor = new ShellProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
+                }else{
+                    sb.insert(0, scriptFilePath);
+                    log.warn("command:{}", sb.toString());
+                    processor = new PyWindowsProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
+                }
+                break;
+            case "sh":
+                if(isLinux){
+                    sb.insert(0, "sh " + scriptFilePath);
+                    log.warn("command:{}", sb.toString());
+                    processor = new ShellProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
+                }
+                break;
+            case "rar":
+            case "zip":
+            case "gz":
+                break;
+            default:
+                throw new PowerJobException("不支持的数据格式");
+
         }
     }
 

@@ -17,7 +17,31 @@ import java.net.URLEncoder;
 public class OmsFileUtils {
 
     private static final String USER_HOME = System.getProperty("user.home", "oms");
-    private static final String COMMON_PATH = USER_HOME + "/powerjob/server/";
+    private static final String COMMON_PATH = USER_HOME + "/pandoraJob-server/";
+    private static final String SCRIPT_FILE_PATH = System.getProperty("user.home", "pandoraJob");
+    private static final String SUFFIX = ".goldwind";
+
+
+    public static String getSuffix(){
+        return SUFFIX;
+    }
+
+    public static String getRealFileName(String fileName){
+        return fileName.substring(0, fileName.indexOf(SUFFIX));
+    }
+
+    public static String genScriptFilePath(String userHome, String appName, long containerId){
+        return userHome + "/pandoraJob/" + appName + "/container/" + containerId + "/";
+    }
+
+    /**
+     * 获取用于构建容器的 script 文件存放路径
+     * @return 路径
+     */
+    public static String genScriptPath() {
+        return COMMON_PATH + "script/";
+    }
+
 
     /**
      * 获取在线日志的存放路径

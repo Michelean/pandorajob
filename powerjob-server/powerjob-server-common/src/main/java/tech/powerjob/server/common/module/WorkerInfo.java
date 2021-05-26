@@ -30,6 +30,11 @@ public class WorkerInfo {
 
     private List<DeployedContainerInfo> containerInfos;
 
+    private String systemInfo;
+
+    private String userHome;
+
+
     private static final long WORKER_TIMEOUT_MS = 60000;
 
     public void refresh(WorkerHeartbeat workerHeartbeat) {
@@ -40,6 +45,8 @@ public class WorkerInfo {
         tag = workerHeartbeat.getTag();
         systemMetrics = workerHeartbeat.getSystemMetrics();
         containerInfos = workerHeartbeat.getContainerInfos();
+        systemInfo = workerHeartbeat.getSystemInfo();
+        userHome = workerHeartbeat.getUserHome();
     }
 
     public boolean timeout() {

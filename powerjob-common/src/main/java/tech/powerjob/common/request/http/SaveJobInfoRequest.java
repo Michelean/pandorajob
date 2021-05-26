@@ -52,6 +52,9 @@ public class SaveJobInfoRequest {
      * Time expression.
      */
     private String timeExpression;
+    private Long containerScript;
+    private Long containerConfig;
+
 
 
     /* ************************** Execution type. ************************** */
@@ -140,9 +143,14 @@ public class SaveJobInfoRequest {
     public void valid() {
         CommonUtils.requireNonNull(jobName, "jobName can't be empty");
         CommonUtils.requireNonNull(appId, "appId can't be empty");
-        CommonUtils.requireNonNull(processorInfo, "processorInfo can't be empty");
         CommonUtils.requireNonNull(executeType, "executeType can't be empty");
         CommonUtils.requireNonNull(processorType, "processorType can't be empty");
+        if(processorType == ProcessorType.CONTAINER_SCRIPT){
+            CommonUtils.requireNonNull(containerScript, "container can't be empty");
+        }else{
+            CommonUtils.requireNonNull(processorInfo, "processorInfo can't be empty");
+        }
+
         CommonUtils.requireNonNull(timeExpressionType, "timeExpressionType can't be empty");
     }
 

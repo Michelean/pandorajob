@@ -28,8 +28,19 @@ public class ServerDeployContainerRequest implements PowerSerializable {
      * 文件名（MD5值），用于做版本校验和文件下载
      */
     private String version;
+
+    /**
+     * 容器类型
+     */
+    private Integer sourceType;
+
+
+    private String containerExecPath;
     /**
      * 下载地址
      */
     private String downloadURL;
+
+
+
 }

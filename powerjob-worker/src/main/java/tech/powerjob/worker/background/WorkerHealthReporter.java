@@ -53,6 +53,8 @@ public class WorkerHealthReporter implements Runnable {
         heartbeat.setProtocol(Protocol.AKKA.name());
         heartbeat.setClient("Atlantis");
         heartbeat.setTag(workerRuntime.getWorkerConfig().getTag());
+        heartbeat.setSystemInfo(System.getProperty("os.name")+"("+System.getProperty("os.version")+")");
+        heartbeat.setUserHome(System.getProperty("user.home", "pandoraJob").replaceAll("\\\\", "/"));
 
         // 获取当前加载的容器列表
         heartbeat.setContainerInfos(OmsContainerFactory.getDeployedContainerInfos());

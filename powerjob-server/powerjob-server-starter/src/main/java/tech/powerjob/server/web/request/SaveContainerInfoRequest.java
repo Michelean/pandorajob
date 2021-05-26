@@ -31,9 +31,20 @@ public class SaveContainerInfoRequest {
     // 状态，枚举值为 ContainerStatus（ENABLE/DISABLE）
     private SwitchableStatus status;
 
+    //描述
+    private String containerDesc;
+
+    //压缩包执行路径
+    private String containerExecPath;
+    private String containerConfigPath;
+
+
     public void valid() {
         CommonUtils.requireNonNull(containerName, "containerName can't be empty");
         CommonUtils.requireNonNull(appId, "appId can't be empty");
-        CommonUtils.requireNonNull(sourceInfo, "sourceInfo can't be empty");
+        if(id == null){
+            CommonUtils.requireNonNull(sourceInfo, "sourceInfo can't be empty");
+        }
+
     }
 }

@@ -3,12 +3,15 @@ package tech.powerjob.server.core;
 import tech.powerjob.common.RemoteConstant;
 import tech.powerjob.common.SystemInstanceResult;
 import tech.powerjob.common.enums.*;
+import tech.powerjob.common.request.ServerDeployContainerRequest;
 import tech.powerjob.common.request.ServerScheduleJobReq;
 import tech.powerjob.server.core.instance.InstanceManager;
 import tech.powerjob.server.core.instance.InstanceMetadataService;
 import tech.powerjob.server.core.lock.UseSegmentLock;
+import tech.powerjob.server.persistence.remote.model.ContainerInfoDO;
 import tech.powerjob.server.persistence.remote.model.InstanceInfoDO;
 import tech.powerjob.server.persistence.remote.model.JobInfoDO;
+import tech.powerjob.server.persistence.remote.repository.ContainerInfoRepository;
 import tech.powerjob.server.persistence.remote.repository.InstanceInfoRepository;
 import tech.powerjob.server.remote.transport.TransportService;
 import tech.powerjob.server.remote.worker.WorkerClusterQueryService;
@@ -23,7 +26,9 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static tech.powerjob.common.enums.InstanceStatus.*;
@@ -51,6 +56,8 @@ public class DispatchService {
     private InstanceMetadataService instanceMetadataService;
     @Resource
     private InstanceInfoRepository instanceInfoRepository;
+    @Resource
+    private ContainerInfoRepository containerInfoRepository;
 
     /**
      * 重新派发任务实例（不考虑实例当前的状态）
@@ -146,6 +153,29 @@ public class DispatchService {
 
         // 构造任务调度请求
         ServerScheduleJobReq req = constructServerScheduleJobReq(jobInfo, instanceInfo, workerIpList);
+
+
+        if(ProcessorType.of(jobInfo.getProcessorType()) == ProcessorType.CONTAINER_SCRIPT){
+            Supplier<ServerDeployContainerRequest> supplier = ServerDeployContainerRequest::new;
+            Long containerScript = jobInfo.getContainerScript();
+            Optional<ContainerInfoDO> containerInfoOpt = containerInfoRepository.findById(containerScript);
+            containerInfoOpt.ifPresent(c->{
+                ServerDeployContainerRequest request = supplier.get();
+                BeanUtils.copyProperties(c, request);
+                request.setContainerId(c.getId());
+                req.setContainerScript(request);
+            });
+            Long containerConfig = jobInfo.getContainerConfig();
+            Optional.ofNullable(containerConfig).ifPresent(config -> {
+                Optional<ContainerInfoDO> containerInfoOpt2 = containerInfoRepository.findById(config);
+                containerInfoOpt2.ifPresent(c->{
+                    ServerDeployContainerRequest request = supplier.get();
+                    BeanUtils.copyProperties(c, request);
+                    request.setContainerId(c.getId());
+                    req.setContainerConfig(request);
+                });
+            });
+        }
 
 
         // 发送请求（不可靠，需要一个后台线程定期轮询状态）

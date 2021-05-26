@@ -99,4 +99,6 @@ public class InstanceInfoDO {
 
     private Date gmtModified;
 
+    private Integer active;
+
 }

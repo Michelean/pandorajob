@@ -1,14 +1,19 @@
 package tech.powerjob.server.core.instance;
 
+import akka.actor.ActorSelection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import tech.powerjob.common.EnvConstant;
+import tech.powerjob.common.InstanceActiveType;
+import tech.powerjob.common.enums.ProcessorType;
 import tech.powerjob.common.exception.PowerJobException;
 import tech.powerjob.common.PowerQuery;
 import tech.powerjob.common.SystemInstanceResult;
 import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.enums.Protocol;
 import tech.powerjob.common.model.InstanceDetail;
+import tech.powerjob.common.request.ProcessDestroyRequest;
 import tech.powerjob.common.request.ServerQueryInstanceStatusReq;
 import tech.powerjob.common.request.ServerStopInstanceReq;
 import tech.powerjob.common.response.AskResponse;
@@ -26,6 +31,8 @@ import tech.powerjob.server.persistence.remote.repository.InstanceInfoRepository
 import tech.powerjob.server.persistence.remote.repository.JobInfoRepository;
 import tech.powerjob.server.remote.server.redirector.DesignateServer;
 import tech.powerjob.server.remote.transport.TransportService;
+import tech.powerjob.server.remote.transport.starter.AkkaStarter;
+import tech.powerjob.server.remote.worker.WorkerClusterManagerService;
 import tech.powerjob.server.remote.worker.WorkerClusterQueryService;
 
 import javax.annotation.Resource;
@@ -78,7 +85,7 @@ public class InstanceService {
      * @param expectTriggerTime 预期执行时间
      * @return 任务实例ID
      */
-    public Long create(Long jobId, Long appId, String jobParams, String instanceParams, Long wfInstanceId, Long expectTriggerTime) {
+    public Long create(Long jobId, Long appId, String jobParams, String instanceParams, Long wfInstanceId, Long expectTriggerTime, Integer ... useless) {
 
         Long instanceId = idGenerateService.allocate();
         Date now = new Date();
@@ -91,7 +98,7 @@ public class InstanceService {
         newInstanceInfo.setInstanceParams(instanceParams);
         newInstanceInfo.setType(wfInstanceId == null ? InstanceType.NORMAL.getV() : InstanceType.WORKFLOW.getV());
         newInstanceInfo.setWfInstanceId(wfInstanceId);
-
+        newInstanceInfo.setActive(useless == null || useless.length == 0? InstanceActiveType.USEFUL.getV() : useless[0]);
         newInstanceInfo.setStatus(InstanceStatus.WAITING_DISPATCH.getV());
         newInstanceInfo.setRunningTimes(0L);
         newInstanceInfo.setExpectedTriggerTime(expectTriggerTime);
@@ -119,6 +126,28 @@ public class InstanceService {
             if (!InstanceStatus.GENERALIZED_RUNNING_STATUS.contains(instanceInfo.getStatus())) {
                 throw new IllegalArgumentException("can't stop finished instance!");
             }
+            Long jobId = instanceInfo.getJobId();
+            JobInfoDO jobInfo = jobInfoRepository.findById(jobId).orElseThrow(() -> new PowerJobException("can't find job info by jobId: " + jobId));
+            Integer processorType = jobInfo.getProcessorType();
+            if(ProcessorType.isKill(processorType)){
+                //如果是java和python程序停止需要kill掉进程
+                String processorInfo = jobInfo.getProcessorInfo();
+                jobInfo.setProcessorType(ProcessorType.SHELL.getV());
+                jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
+                String instanceParams = instanceInfo.getInstanceParams();
+                jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
+                Long newInsId = this.create(jobInfo.getId(), jobInfo.getAppId(), jobInfo.getJobParams(), instanceParams, null, System.currentTimeMillis() + Math.max(0L, 0), InstanceActiveType.USELESS.getV());
+                dispatchService.dispatch(jobInfo, newInsId);
+            }
+
+            if(ProcessorType.isDestroy(processorType)){
+                ProcessDestroyRequest processDestroyRequest = new ProcessDestroyRequest(instanceId);
+                workerClusterQueryService.getAllAliveWorkers(instanceInfo.getAppId()).forEach(workerInfo -> {
+                    ActorSelection workerActor = AkkaStarter.getWorkerActor(workerInfo.getAddress());
+                    workerActor.tell(processDestroyRequest, null);
+                });
+            }
+
 
             // 更新数据库，将状态置为停止
             instanceInfo.setStatus(STOPPED.getV());
