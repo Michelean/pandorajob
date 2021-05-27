@@ -125,6 +125,7 @@ public class ContainerController {
         Pageable pageable = PageRequest.of(request.getIndex(), request.getPageSize(), sort);
         Specification<ContainerInfoDO> specification = (root, query, cb) -> {
             List<Predicate> list = new ArrayList<>();
+            list.add(cb.equal(root.get("appId"), request.getAppId()));
             list.add(cb.notEqual(root.get("status"), SwitchableStatus.DELETED.getV()));
             if(sourceType != null) {
                 list.add(cb.equal(root.get("sourceType"), sourceType.getV()));
