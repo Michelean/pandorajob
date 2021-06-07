@@ -428,7 +428,11 @@ public class ProcessorTracker {
             sb.append(" ").append(filePath);
         });
         String jobParams = instanceInfo.getJobParams();
+
         if(StringUtils.isNotBlank(jobParams)){
+            //去空格换行转义
+            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
+            jobParams = "\"" + jobParams + "\"";
             sb.append(" ").append(jobParams);
         }
         boolean isLinux = ZipAndRarTools.isLinux();

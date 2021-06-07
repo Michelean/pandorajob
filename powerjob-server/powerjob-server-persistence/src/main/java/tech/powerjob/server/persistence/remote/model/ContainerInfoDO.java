@@ -26,7 +26,8 @@ public class ContainerInfoDO {
      * 所属的应用ID
      */
     private Long appId;
-
+    // 容器Tag
+    private String containerTag;
     private String containerName;
     private String containerDesc;
 

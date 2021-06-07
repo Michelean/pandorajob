@@ -15,6 +15,9 @@ public class ContainerInfoVO {
 
     private Long id;
 
+    // 容器Tag
+    private String containerTag;
+
     private String containerName;
 
     // 容器类型，枚举值为 ContainerSourceType

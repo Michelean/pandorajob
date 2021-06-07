@@ -20,6 +20,8 @@ public class SaveContainerInfoRequest {
     // 所属的应用ID
     private Long appId;
 
+    // 容器Tag
+    private String containerTag;
     // 容器名称
     private String containerName;
 
