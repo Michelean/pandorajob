@@ -456,6 +456,7 @@ public class ProcessorTracker {
                 }
                 break;
             case "py":
+            case "pyc":
                 if(isLinux){
                     sb.insert(0, "python3 " + scriptFilePath);
                     log.warn("command:{}", sb.toString());

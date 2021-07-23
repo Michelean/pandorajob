@@ -73,6 +73,7 @@ public class JobInfoDO {
     //脚本配置id
     private Long containerConfig;
 
+    private String templateCode;
     /**
      * 执行器信息
      */

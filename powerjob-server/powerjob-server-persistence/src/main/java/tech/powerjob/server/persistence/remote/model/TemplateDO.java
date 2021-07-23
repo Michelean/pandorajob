@@ -31,6 +31,8 @@ public class TemplateDO {
 
     private String name;
 
+    private String code;
+
     private String json;
 
     private Date gmtCreate;

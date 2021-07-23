@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 public class SaveTemplateRequest {
     private Long id;
     private String name;
+    private String code;
     private Long appId;
     private String json;
 }

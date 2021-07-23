@@ -55,6 +55,7 @@ public class SaveJobInfoRequest {
     private Long containerScript;
     private Long containerConfig;
 
+    private String templateCode;
 
 
     /* ************************** Execution type. ************************** */

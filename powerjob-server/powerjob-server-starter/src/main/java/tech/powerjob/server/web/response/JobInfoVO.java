@@ -56,7 +56,7 @@ public class JobInfoVO {
     //脚本配置id
     private Long containerConfig;
 
-
+    private String templateCode;
     /* ************************** 运行时配置 ************************** */
     // 最大同时运行任务数，默认 1
     private Integer maxInstanceNum;

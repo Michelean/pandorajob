@@ -10,5 +10,6 @@ import lombok.Data;
 public class TemplateVO {
     private Long id;
     private String name;
+    private String code;
     private String json;
 }

@@ -15,7 +15,7 @@
     <springProperty scope="context" name="environment" source="spring.profiles.active"/>
 
     <!-- 日志文件输出目录 -->
-    <property name="fileDir" value="/opt/log/${appName}"/>
+    <property name="fileDir" value="${user.home}/powerjob/server/logs"/>
 
     <!-- SDK提供的基础配置 -->
     <include resource="logBaseConfig.xml"/>
