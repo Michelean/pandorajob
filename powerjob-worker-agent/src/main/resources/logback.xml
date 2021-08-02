@@ -2,7 +2,7 @@
 <!-- 当scan被设置为true时，当配置文件发生改变，将会被重新加载，默认为true -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
     <!-- 日志服务器host -->
-    <property name="server.host" value="10.10.0.42"/>
+    <property name="server.host" value="10.10.3.18"/>
     <!-- 日志服务器端口 -->
     <property name="server.port" value="24224"/>
 

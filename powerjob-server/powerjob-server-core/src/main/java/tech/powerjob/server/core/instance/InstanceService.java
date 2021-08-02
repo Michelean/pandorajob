@@ -4,6 +4,7 @@ import akka.actor.ActorSelection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import tech.powerjob.common.EnvConstant;
 import tech.powerjob.common.InstanceActiveType;
 import tech.powerjob.common.enums.ProcessorType;
@@ -129,24 +130,46 @@ public class InstanceService {
             Long jobId = instanceInfo.getJobId();
             JobInfoDO jobInfo = jobInfoRepository.findById(jobId).orElseThrow(() -> new PowerJobException("can't find job info by jobId: " + jobId));
             Integer processorType = jobInfo.getProcessorType();
-            if(ProcessorType.isKill(processorType)){
-                //如果是java和python程序停止需要kill掉进程
-                String processorInfo = jobInfo.getProcessorInfo();
-                jobInfo.setProcessorType(ProcessorType.SHELL.getV());
-                jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
-                String instanceParams = instanceInfo.getInstanceParams();
-                jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
-                Long newInsId = this.create(jobInfo.getId(), jobInfo.getAppId(), jobInfo.getJobParams(), instanceParams, null, System.currentTimeMillis() + Math.max(0L, 0), InstanceActiveType.USELESS.getV());
-                dispatchService.dispatch(jobInfo, newInsId);
-            }
-
-            if(ProcessorType.isDestroy(processorType)){
-                ProcessDestroyRequest processDestroyRequest = new ProcessDestroyRequest(instanceId);
-                workerClusterQueryService.getAllAliveWorkers(instanceInfo.getAppId()).forEach(workerInfo -> {
-                    ActorSelection workerActor = AkkaStarter.getWorkerActor(workerInfo.getAddress());
-                    workerActor.tell(processDestroyRequest, null);
+            //fix 修改停止实例逻辑
+            //运行实例机器一般都存在，广播执行停止任务会存在问题
+            if(!processorType.equals(ProcessorType.BUILT_IN.getV()) && !processorType.equals(ProcessorType.EXTERNAL.getV())){
+                String taskTrackerAddress = instanceInfo.getTaskTrackerAddress();
+                Optional<WorkerInfo> workerInfoByAddress = workerClusterQueryService.getWorkerInfoByAddress(instanceInfo.getAppId(), taskTrackerAddress);
+                workerInfoByAddress.ifPresent(workerInfo -> {
+                    String systemInfo = workerInfo.getSystemInfo();
+                    if(systemInfo.toLowerCase().contains("windows")){
+                        ProcessDestroyRequest processDestroyRequest = new ProcessDestroyRequest(instanceId);
+                        ActorSelection workerActor = AkkaStarter.getWorkerActor(workerInfo.getAddress());
+                        workerActor.tell(processDestroyRequest, null);
+                    }else{
+                        String processorInfo = StringUtils.isEmpty(jobInfo.getProcessorInfo())?jobInfo.getJobParams():jobInfo.getProcessorInfo();
+                        jobInfo.setProcessorType(ProcessorType.SHELL.getV());
+                        jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
+                        String instanceParams = instanceInfo.getInstanceParams();
+                        jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
+                        Long newInsId = this.create(jobInfo.getId(), jobInfo.getAppId(), jobInfo.getJobParams(), instanceParams, null, System.currentTimeMillis() + Math.max(0L, 0), InstanceActiveType.USELESS.getV());
+                        dispatchService.dispatch(jobInfo, newInsId);
+                    }
                 });
             }
+//            if(ProcessorType.isKill(processorType)){
+//                //如果是java和python程序停止需要kill掉进程
+//                String processorInfo = jobInfo.getProcessorInfo();
+//                jobInfo.setProcessorType(ProcessorType.SHELL.getV());
+//                jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
+//                String instanceParams = instanceInfo.getInstanceParams();
+//                jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
+//                Long newInsId = this.create(jobInfo.getId(), jobInfo.getAppId(), jobInfo.getJobParams(), instanceParams, null, System.currentTimeMillis() + Math.max(0L, 0), InstanceActiveType.USELESS.getV());
+//                dispatchService.dispatch(jobInfo, newInsId);
+//            }
+//
+//            if(ProcessorType.isDestroy(processorType)){
+//                ProcessDestroyRequest processDestroyRequest = new ProcessDestroyRequest(instanceId);
+//                workerClusterQueryService.getAllAliveWorkers(instanceInfo.getAppId()).forEach(workerInfo -> {
+//                    ActorSelection workerActor = AkkaStarter.getWorkerActor(workerInfo.getAddress());
+//                    workerActor.tell(processDestroyRequest, null);
+//                });
+//            }
 
 
             // 更新数据库，将状态置为停止
