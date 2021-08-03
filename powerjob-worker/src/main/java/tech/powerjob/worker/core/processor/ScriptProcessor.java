@@ -110,6 +110,8 @@ public abstract class ScriptProcessor implements BasicProcessor {
     }
 
     private void killScript() throws IOException, InterruptedException {
+        //linux grep用单引号方式查找，里面单双引号全部替换成.
+        processInfo = processInfo.replaceAll("\"","\\.").replaceAll("'","\\.");
         String killCommand = String.format(EnvConstant.getKillCommand(), processInfo, processInfo);
         String path = OmsWorkerFileUtils.getScriptDir() + instanceId + "-kill.sh";
         File killScript = new File(path);

@@ -144,6 +144,9 @@ public class InstanceService {
                     }else{
                         String processorInfo = StringUtils.isEmpty(jobInfo.getProcessorInfo())?jobInfo.getJobParams():jobInfo.getProcessorInfo();
                         jobInfo.setProcessorType(ProcessorType.SHELL.getV());
+                        //linux grep用单引号方式查找，里面单双引号全部替换成.
+                        processorInfo = processorInfo.replaceAll("\"","\\.").replaceAll("'","\\.");
+
                         jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
                         String instanceParams = instanceInfo.getInstanceParams();
                         jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
