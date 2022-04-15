@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.util.CollectionUtils;
 import tech.powerjob.common.EnvConstant;
 import tech.powerjob.common.exception.PowerJobException;
@@ -38,6 +39,8 @@ import tech.powerjob.worker.pojo.request.ProcessorReportTaskStatusReq;
 import tech.powerjob.worker.pojo.request.ProcessorTrackerStatusReportReq;
 import tech.powerjob.worker.pojo.request.TaskTrackerStartTaskReq;
 
+import java.net.InetAddress;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
@@ -436,12 +439,17 @@ public class ProcessorTracker {
         String jobParams = instanceInfo.getJobParams();
 
         if(StringUtils.isNotBlank(jobParams)){
-            //不去空格
-            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
-            //去空格换行转义
-            //            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
-            jobParams = "\"" + jobParams + "\"";
-            sb.append(" ").append(jobParams);
+            if(jobParams.contains("-BD")){
+                jobParams +=",'-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"','-BDenterpriseID=1', '-BDapplicationUserID=dxj', '-BDapplicationUserPassword=123456','-BDjobRecordID='"+instanceInfo.getInstanceId()+", '-BDtaskID="+instanceInfo.getJobId()+"','-BDresultURL="+ InetAddress.getLocalHost()+"', '-BDcommonParams={\"env\":2}'";
+            }else{
+                //不去空格
+                jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
+                //去空格换行转义
+                //            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
+                jobParams = "\"" + jobParams + "\"";
+                sb.append(" ").append(jobParams);
+            }
+
         }
         boolean isLinux = ZipAndRarTools.isLinux();
         String scriptFilePath = OmsWorkerFileUtils.getFilePath(containerScript.getContainerId(), containerScript.getVersion());

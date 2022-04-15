@@ -1,6 +1,5 @@
 package tech.powerjob.server.core.service;
 
-import com.google.common.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tech.powerjob.common.response.MonitorPartsDTO;
@@ -11,12 +10,9 @@ import tech.powerjob.server.persistence.external.MonitorPartsDO;
 import tech.powerjob.server.persistence.external.MonitorPartsRepository;
 import tech.powerjob.server.persistence.external.WfDO;
 import tech.powerjob.server.persistence.external.WfRepository;
-import tech.powerjob.server.persistence.remote.model.JobInfoDO;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -36,7 +32,13 @@ public class WindfarmService {
     private CacheService cacheService;
 
     public List<WfDTO> listWindfarm() {
-        return ConvertUtils.convertList(wfRepository.findAll(), WfDTO::new);
+        List<WfDTO> wfDTOS = ConvertUtils.convertList(wfRepository.findAll(), WfDTO::new);
+        wfDTOS = wfDTOS.stream()
+                .collect
+                        (Collectors.collectingAndThen(Collectors.toCollection(
+                                () -> new TreeSet<>(Comparator.comparing(WfDTO::getWfScadaid)))
+                                , ArrayList::new));
+        return wfDTOS;
     }
 
 
