@@ -412,6 +412,12 @@ public class ProcessorTracker {
         }
     }
 
+    public static void main(String[] args) {
+        String s = "{\"farm_name\":[\"Australia Gullen Range Wind Farm\"],\"device_number\":[\"\"],\"model_type\":\"GW2.5\",\"start_date\":\"2021-06-01\",\"end_date\":\"2021-06-30\"}";
+        s = s.replaceAll("(\\r\\n|\\n|\\n\\r)", "");
+        System.out.println(s);
+    }
+
 
     private void findMatchingProcessor(InstanceInfo instanceInfo) throws Exception {
         StringBuffer sb = new StringBuffer();
@@ -430,8 +436,10 @@ public class ProcessorTracker {
         String jobParams = instanceInfo.getJobParams();
 
         if(StringUtils.isNotBlank(jobParams)){
+            //不去空格
+            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
             //去空格换行转义
-            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
+            //            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
             jobParams = "\"" + jobParams + "\"";
             sb.append(" ").append(jobParams);
         }

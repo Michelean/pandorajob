@@ -53,4 +53,10 @@ public class MultiDatasourceConfig {
         }
         return new HikariDataSource(config);
     }
+
+    @Bean("omsJfDatasource")
+    @ConfigurationProperties(prefix = "spring.datasource.pg")
+    public DataSource initOmsJfDatasource(){
+        return DataSourceBuilder.create().build();
+    }
 }

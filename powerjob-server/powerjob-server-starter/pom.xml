@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.goldwind.ngsp</groupId>
             <artifactId>ngsp-c-logback-ext</artifactId>
-            <version>V1.0.200.0-SNAPSHOT</version>
+            <version>V1.0.300.0-RELEASE</version>
         </dependency>
     </dependencies>
 

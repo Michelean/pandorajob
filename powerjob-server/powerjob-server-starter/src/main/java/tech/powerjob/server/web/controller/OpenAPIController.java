@@ -7,10 +7,9 @@ import tech.powerjob.common.request.http.SaveJobInfoRequest;
 import tech.powerjob.common.request.http.SaveWorkflowNodeRequest;
 import tech.powerjob.common.request.http.SaveWorkflowRequest;
 import tech.powerjob.common.request.query.JobInfoQuery;
-import tech.powerjob.common.response.InstanceInfoDTO;
-import tech.powerjob.common.response.JobInfoDTO;
-import tech.powerjob.common.response.ResultDTO;
-import tech.powerjob.common.response.WorkflowInstanceInfoDTO;
+import tech.powerjob.common.response.*;
+import tech.powerjob.server.core.service.WindfarmService;
+import tech.powerjob.server.persistence.external.WfDO;
 import tech.powerjob.server.persistence.remote.model.WorkflowInfoDO;
 import tech.powerjob.server.persistence.remote.model.WorkflowNodeInfoDO;
 import tech.powerjob.server.core.service.AppInfoService;
@@ -46,9 +45,23 @@ public class OpenAPIController {
     private WorkflowService workflowService;
     @Resource
     private WorkflowInstanceService workflowInstanceService;
+    @Resource
+    private WindfarmService windfarmService;
 
     @Resource
     private CacheService cacheService;
+
+    @GetMapping("/listWindfarm")
+    public ResultDTO<List<WfDTO>> listWindfarm() {
+        return ResultDTO.success(windfarmService.listWindfarm());
+    }
+
+    @PostMapping("/getTurbineByWfScadaid")
+    public ResultDTO<List<MonitorPartsDTO>> getTurbineByWfScadaid(@RequestParam String wfScadaid) {
+        return ResultDTO.success(windfarmService.getTurbineByWfScadaid(wfScadaid));
+    }
+
+
 
 
     @PostMapping(OpenAPIConstant.ASSERT)

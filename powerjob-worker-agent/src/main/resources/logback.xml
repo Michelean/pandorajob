@@ -17,6 +17,7 @@
     <!-- 日志文件输出目录 -->
     <property name="fileDir" value="${user.home}/powerjob/worker/agent_logs"/>
 
+    <property name="fileTotalSizeCap" value="10GB"/>
     <!-- SDK提供的基础配置 -->
     <include resource="logBaseConfig.xml"/>
 
