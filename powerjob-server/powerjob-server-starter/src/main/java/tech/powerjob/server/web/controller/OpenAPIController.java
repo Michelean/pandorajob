@@ -61,6 +61,10 @@ public class OpenAPIController {
         return ResultDTO.success(windfarmService.getTurbineByWfScadaid(wfScadaid));
     }
 
+    @GetMapping("/getTurbineTree")
+    public ResultDTO<List<TreeNodeDTO>> getTurbineTree() {
+        return ResultDTO.success(windfarmService.getTurbineTree());
+    }
 
 
 

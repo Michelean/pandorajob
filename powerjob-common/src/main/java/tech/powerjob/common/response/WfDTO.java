@@ -8,7 +8,7 @@ import lombok.Data;
  */
 @Data
 public class WfDTO {
-    private String wfId;
+
 
     private String wfName;
     /**

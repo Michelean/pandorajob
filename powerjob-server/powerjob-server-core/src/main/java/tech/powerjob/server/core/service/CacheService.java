@@ -1,5 +1,7 @@
 package tech.powerjob.server.core.service;
 
+import tech.powerjob.server.persistence.external.MonitorPartsDO;
+import tech.powerjob.server.persistence.external.MonitorPartsRepository;
 import tech.powerjob.server.persistence.remote.model.InstanceInfoDO;
 import tech.powerjob.server.persistence.remote.model.JobInfoDO;
 import tech.powerjob.server.persistence.remote.model.WorkflowInfoDO;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,11 +34,15 @@ public class CacheService {
     private WorkflowInfoRepository workflowInfoRepository;
     @Resource
     private InstanceInfoRepository instanceInfoRepository;
+    @Resource
+    private MonitorPartsRepository monitorPartsRepository;
 
     private final Cache<Long, String> jobId2JobNameCache;
     private final Cache<Long, String> workflowId2WorkflowNameCache;
     private final Cache<Long, Long> instanceId2AppId;
     private final Cache<Long, Long> jobId2AppId;
+
+    private final Cache<String, List<MonitorPartsDO>> monitorPartsCache;
 
     public CacheService() {
         jobId2JobNameCache = CacheBuilder.newBuilder()
@@ -54,6 +61,23 @@ public class CacheService {
         jobId2AppId = CacheBuilder.newBuilder()
                 .maximumSize(1024)
                 .build();
+
+        monitorPartsCache = CacheBuilder.newBuilder()
+                .maximumSize(4096)
+                .build();
+    }
+
+
+    public List<MonitorPartsDO> getMonitorPartsDOs(String wfId){
+        try {
+            return monitorPartsCache.get(wfId, () -> {
+                // 防止缓存穿透 hhh（但是一开始没有，后来创建的情况下会有问题，不过问题不大，这里就不管了）
+                return monitorPartsRepository.findByWfId(wfId);
+            });
+        }catch (Exception e) {
+            log.error("[CacheService] getMonitorPartsDOs for {} failed.", wfId, e);
+        }
+        return null;
     }
 
     /**

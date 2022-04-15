@@ -1,15 +1,24 @@
 package tech.powerjob.server.core.service;
 
+import com.google.common.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tech.powerjob.common.response.MonitorPartsDTO;
+import tech.powerjob.common.response.TreeNodeDTO;
 import tech.powerjob.common.response.WfDTO;
 import tech.powerjob.server.common.utils.ConvertUtils;
+import tech.powerjob.server.persistence.external.MonitorPartsDO;
 import tech.powerjob.server.persistence.external.MonitorPartsRepository;
+import tech.powerjob.server.persistence.external.WfDO;
 import tech.powerjob.server.persistence.external.WfRepository;
+import tech.powerjob.server.persistence.remote.model.JobInfoDO;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author: zmx
@@ -23,6 +32,8 @@ public class WindfarmService {
     private WfRepository wfRepository;
     @Resource
     private MonitorPartsRepository monitorPartsRepository;
+    @Resource
+    private CacheService cacheService;
 
     public List<WfDTO> listWindfarm() {
         return ConvertUtils.convertList(wfRepository.findAll(), WfDTO::new);
@@ -35,4 +46,24 @@ public class WindfarmService {
     }
 
 
+    public List<TreeNodeDTO> getTurbineTree() {
+        List<WfDO> wfDOList = wfRepository.findAll();
+        List<TreeNodeDTO> treeList = Collections.synchronizedList(new ArrayList());
+        Supplier<TreeNodeDTO> supplier = TreeNodeDTO::new;
+        wfDOList.parallelStream().forEach(w->{
+            TreeNodeDTO treeNodeDTO = supplier.get();
+            List<MonitorPartsDO> monitorPartsDOList = cacheService.getMonitorPartsDOs(w.getWfId());
+            treeNodeDTO.setName(w.getWfName());
+            treeNodeDTO.setScadaId(w.getWfScadaid());
+            List<TreeNodeDTO> collect = monitorPartsDOList.stream().map(m -> {
+                TreeNodeDTO node = supplier.get();
+                node.setScadaId(m.getBmpScadaid());
+                node.setName(m.getBmpName());
+                return node;
+            }).collect(Collectors.toList());
+            treeNodeDTO.setChildren(collect);
+            treeList.add(treeNodeDTO);
+        });
+        return treeList;
+    }
 }
