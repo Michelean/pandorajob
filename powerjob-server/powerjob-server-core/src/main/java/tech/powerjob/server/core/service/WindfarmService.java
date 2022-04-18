@@ -33,7 +33,7 @@ public class WindfarmService {
 
     public List<WfDTO> listWindfarm() {
         List<WfDTO> wfDTOS = ConvertUtils.convertList(wfRepository.findAll(), WfDTO::new);
-        wfDTOS = wfDTOS.stream()
+        wfDTOS = wfDTOS.stream().sorted(Comparator.comparing(WfDTO::getWfScadaid))
                 .collect
                         (Collectors.collectingAndThen(Collectors.toCollection(
                                 () -> new TreeSet<>(Comparator.comparing(WfDTO::getWfScadaid)))
@@ -66,6 +66,7 @@ public class WindfarmService {
             treeNodeDTO.setChildren(collect);
             treeList.add(treeNodeDTO);
         });
+        treeList.stream().sorted(Comparator.comparing(TreeNodeDTO::getScadaId)).collect(Collectors.toList());
         return treeList;
     }
 }
