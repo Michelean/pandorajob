@@ -66,7 +66,6 @@ public class WindfarmService {
             treeNodeDTO.setChildren(collect);
             treeList.add(treeNodeDTO);
         });
-        treeList.stream().sorted(Comparator.comparing(TreeNodeDTO::getScadaId)).collect(Collectors.toList());
-        return treeList;
+        return treeList.stream().sorted(Comparator.comparing(TreeNodeDTO::getScadaId).thenComparing(TreeNodeDTO::getName)).collect(Collectors.toList());
     }
 }
