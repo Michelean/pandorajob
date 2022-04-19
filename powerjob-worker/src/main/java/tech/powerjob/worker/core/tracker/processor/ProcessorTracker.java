@@ -416,9 +416,23 @@ public class ProcessorTracker {
     }
 
     public static void main(String[] args) {
-        String s = "{\"farm_name\":[\"Australia Gullen Range Wind Farm\"],\"device_number\":[\"\"],\"model_type\":\"GW2.5\",\"start_date\":\"2021-06-01\",\"end_date\":\"2021-06-30\"}";
-        s = s.replaceAll("(\\r\\n|\\n|\\n\\r)", "");
-        System.out.println(s);
+        String jobParams = "-BDwfID=100024,100020";
+        StringBuffer sb = new StringBuffer();
+        if(StringUtils.isNotBlank(jobParams)){
+            if(jobParams.contains("-BD")){
+                jobParams = "'"+jobParams+"','-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"','-BDenterpriseID=1', '-BDapplicationUserID=dxj', '-BDapplicationUserPassword=123456'";
+
+            }else{
+                //不去空格
+                jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
+                //去空格换行转义
+                //            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
+                jobParams = "\"" + jobParams + "\"";
+
+            }
+            sb.append(" ").append(jobParams);
+        }
+        System.out.println(sb.toString());
     }
 
 
@@ -437,19 +451,17 @@ public class ProcessorTracker {
             sb.append(" ").append(filePath);
         });
         String jobParams = instanceInfo.getJobParams();
-
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
-                jobParams +=",'-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"','-BDenterpriseID=1', '-BDapplicationUserID=dxj', '-BDapplicationUserPassword=123456','-BDjobRecordID='"+instanceInfo.getInstanceId()+", '-BDtaskID="+instanceInfo.getJobId()+"','-BDresultURL="+ InetAddress.getLocalHost()+"', '-BDcommonParams={\"env\":2}'";
+                jobParams ="'"+jobParams+"' '-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"' '-BDenterpriseID=1' '-BDapplicationUserID=dxj' '-BDapplicationUserPassword=123456' '-BDjobRecordID='"+instanceInfo.getInstanceId()+" '-BDtaskID="+instanceInfo.getJobId()+"' '-BDresultURL="+ InetAddress.getLocalHost()+"' '-BDcommonParams={\"env\":2}'";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
                 //去空格换行转义
                 //            jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r|\t|\\s)", "").replaceAll("\"", "'");
                 jobParams = "\"" + jobParams + "\"";
-                sb.append(" ").append(jobParams);
             }
-
+            sb.append(" ").append(jobParams);
         }
         boolean isLinux = ZipAndRarTools.isLinux();
         String scriptFilePath = OmsWorkerFileUtils.getFilePath(containerScript.getContainerId(), containerScript.getVersion());
