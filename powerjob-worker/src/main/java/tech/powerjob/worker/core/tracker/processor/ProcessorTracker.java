@@ -20,6 +20,7 @@ import tech.powerjob.common.utils.ZipAndRarTools;
 import tech.powerjob.worker.common.WorkerRuntime;
 import tech.powerjob.worker.common.constants.TaskStatus;
 import tech.powerjob.worker.common.utils.AkkaUtils;
+import tech.powerjob.worker.common.utils.IpUtil;
 import tech.powerjob.worker.common.utils.OmsWorkerFileUtils;
 import tech.powerjob.worker.common.utils.SpringUtils;
 import tech.powerjob.worker.container.OmsContainer;
@@ -40,6 +41,8 @@ import tech.powerjob.worker.pojo.request.ProcessorTrackerStatusReportReq;
 import tech.powerjob.worker.pojo.request.TaskTrackerStartTaskReq;
 
 import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -415,13 +418,12 @@ public class ProcessorTracker {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException, SocketException {
         String jobParams = "-BDwfID=100024,100020";
         StringBuffer sb = new StringBuffer();
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
-                jobParams = "'"+jobParams+"','-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"','-BDenterpriseID=1', '-BDapplicationUserID=dxj', '-BDapplicationUserPassword=123456'";
-
+                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+"222"+" -BDtaskID="+"1"+" -BDresultURL="+ IpUtil.getLocalIp4Address().get().toString().replaceAll("/","")+" -BDcommonParams={\"env\":2}";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
@@ -453,7 +455,7 @@ public class ProcessorTracker {
         String jobParams = instanceInfo.getJobParams();
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
-                jobParams ="'"+jobParams+"' '-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss") +"' '-BDenterpriseID=1' '-BDapplicationUserID=dxj' '-BDapplicationUserPassword=123456' '-BDjobRecordID='"+instanceInfo.getInstanceId()+" '-BDtaskID="+instanceInfo.getJobId()+"' '-BDresultURL="+ InetAddress.getLocalHost()+"' '-BDcommonParams={\"env\":2}'";
+                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+instanceInfo.getInstanceId()+" -BDtaskID="+instanceInfo.getJobId()+" -BDresultURL="+ IpUtil.getLocalIp4Address().get().toString().replaceAll("/","")+" -BDcommonParams={\"env\":2}";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");

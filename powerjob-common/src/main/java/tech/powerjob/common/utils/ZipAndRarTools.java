@@ -51,7 +51,7 @@ public class ZipAndRarTools {
     }
 
     public static void main(String[] args) throws Exception {
-        File file = new File("E:\\home\\Desktop.zip");
+        File file = new File("E:\\home\\Result_alarm_1500(1).zip");
         deCompress(file.getPath(), file.getParent());
     }
 
@@ -70,7 +70,7 @@ public class ZipAndRarTools {
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
                 // 若当前zipEntry是一个文件夹
                 if (zipEntry.isDirectory()) {
-                    fileOut = new File(savePath + "\\" + zipEntry.getName());
+                    fileOut = new File(savePath + "/" + zipEntry.getName());
                     // 在指定路径下创建文件夹
                     if (!fileOut.exists()) {
                         fileOut.mkdirs();
