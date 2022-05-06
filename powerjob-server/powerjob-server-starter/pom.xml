@@ -52,6 +52,7 @@
 
     <!-- SpringBoot maven plugin -->
     <build>
+        <finalName>Athena-Quartz-Server-4.0.1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

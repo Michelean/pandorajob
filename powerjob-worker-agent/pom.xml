@@ -109,6 +109,7 @@
 
     <!-- 谁说SpringBoot的打包插件只能给SpringBoot用的？省的我写一堆配置还有BUG... -->
     <build>
+        <finalName>Athena-Quartz-Worker-4.0.1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
