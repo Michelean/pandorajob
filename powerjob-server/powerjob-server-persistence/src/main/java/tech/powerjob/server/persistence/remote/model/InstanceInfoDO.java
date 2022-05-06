@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -20,7 +21,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(indexes = {@Index(columnList = "jobId"), @Index(columnList = "appId"), @Index(columnList = "instanceId")})
-public class InstanceInfoDO {
+public class InstanceInfoDO implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
@@ -42,13 +43,11 @@ public class InstanceInfoDO {
      * 任务参数（静态）
      * @since 2021/2/01
      */
-    @Lob
     @Column
     private String jobParams;
     /**
      * 任务实例参数（动态）
      */
-    @Lob
     @Column
     private String instanceParams;
     /**
@@ -66,7 +65,6 @@ public class InstanceInfoDO {
     /**
      * 执行结果（允许存储稍大的结果）
      */
-    @Lob
     @Column
     private String result;
     /**

@@ -36,7 +36,7 @@ public class PowerJobServerApplication {
     }
 
     private static void pre() {
-        PropertyUtils.init();
+        PropertyUtils.initByConfig();
     }
 
 }

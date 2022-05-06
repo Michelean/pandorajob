@@ -3,6 +3,9 @@ package tech.powerjob.server.common.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Objects;
@@ -32,4 +35,19 @@ public class PropertyUtils {
             ExceptionUtils.rethrow(e);
         }
     }
+
+    public static void initByConfig() {
+        File file = new File("config/application.properties");
+        if(file.exists()){
+            try {
+                InputStream fileInputStream = new FileInputStream(file);
+                PROPERTIES.load(fileInputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else{
+            init();
+        }
+    }
+
 }

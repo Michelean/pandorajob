@@ -24,7 +24,7 @@ public class JobInfoDO {
 
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "native")
     @GenericGenerator(name = "native", strategy = "native")
     private Long id;
 
@@ -44,7 +44,6 @@ public class JobInfoDO {
     /**
      * 任务自带的参数
      */
-    @Lob
     @Column
     private String jobParams;
 
