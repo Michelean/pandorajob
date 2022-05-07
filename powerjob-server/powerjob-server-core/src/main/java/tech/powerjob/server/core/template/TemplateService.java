@@ -45,4 +45,9 @@ public class TemplateService {
         List<TemplateDO> templateDOList = templateRepository.findByAppId(appId);
         return templateDOList;
     }
+
+    public List<TemplateDO> listAll() {
+        return templateRepository.findAll();
+    }
+
 }

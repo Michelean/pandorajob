@@ -48,6 +48,11 @@
             <artifactId>ngsp-c-logback-ext</artifactId>
             <version>V1.0.300.0-RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>5.2.1</version>
+        </dependency>
     </dependencies>
 
     <!-- SpringBoot maven plugin -->

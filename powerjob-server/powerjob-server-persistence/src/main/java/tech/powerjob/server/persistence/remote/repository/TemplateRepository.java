@@ -10,4 +10,6 @@ import java.util.List;
 public interface TemplateRepository extends JpaRepository<TemplateDO, Long>, JpaSpecificationExecutor<TemplateDO> {
 
     List<TemplateDO> findByAppId(Long appId);
+
+
 }

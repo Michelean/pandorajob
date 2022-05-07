@@ -39,8 +39,8 @@ public class TemplateController {
     }
 
     @GetMapping("/list")
-    public ResultDTO<List<TemplateVO>> listTemplates(Long appId) {
-        List<TemplateDO> templateDOS = templateService.listByAppId(appId);
+    public ResultDTO<List<TemplateVO>> listTemplates() {
+        List<TemplateDO> templateDOS = templateService.listAll();
         return ResultDTO.success(ConvertUtils.convertList(templateDOS, TemplateVO::new));
     }
 
