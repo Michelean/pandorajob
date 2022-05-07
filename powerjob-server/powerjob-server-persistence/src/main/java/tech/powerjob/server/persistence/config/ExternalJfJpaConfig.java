@@ -80,7 +80,6 @@ public class ExternalJfJpaConfig {
     }
 
 
-    @Primary
     @Bean(name = "externalTransactionManager")
     public PlatformTransactionManager externalTransactionManager(EntityManagerFactoryBuilder builder) {
         return new JpaTransactionManager(Objects.requireNonNull(initExternalEntityManagerFactory(builder).getObject()));
