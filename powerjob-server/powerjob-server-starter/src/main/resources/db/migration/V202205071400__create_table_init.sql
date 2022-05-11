@@ -374,3 +374,5 @@ CREATE INDEX "IDXacr0i6my8jr002ou8i1gmygju" ON "public"."workflow_node_info" USI
 -- Primary Key structure for table workflow_node_info
 -- ----------------------------
 ALTER TABLE "public"."workflow_node_info" ADD CONSTRAINT "workflow_node_info_pkey" PRIMARY KEY ("id");
+
+INSERT INTO "public"."app_info"("id", "app_name", "current_server", "gmt_create", "gmt_modified", "password") VALUES (1, 'iphm', NULL, '2022-05-11 09:09:20.29', '2022-05-11 09:09:20.293', 'iphm');
