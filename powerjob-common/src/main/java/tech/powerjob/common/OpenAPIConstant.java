@@ -27,6 +27,7 @@ public class OpenAPIConstant {
     public static final String ENABLE_JOB = "/enableJob";
     public static final String DELETE_JOB = "/deleteJob";
     public static final String RUN_JOB = "/runJob";
+    public static final String START_JOB = "/startJob";
 
     /* ************* Instance 区 ************* */
 
@@ -47,6 +48,7 @@ public class OpenAPIConstant {
     public static final String DELETE_WORKFLOW = "/deleteWorkflow";
     public static final String RUN_WORKFLOW = "/runWorkflow";
     public static final String SAVE_WORKFLOW_NODE = "/addWorkflowNode";
+    public static final String START_WORKFLOW = "/startWorkflow";
 
     /* ************* WorkflowInstance 区 ************* */
 

@@ -455,7 +455,8 @@ public class ProcessorTracker {
         String jobParams = instanceInfo.getJobParams();
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
-                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+instanceInfo.getInstanceId()+" -BDtaskID="+instanceInfo.getJobId()+" -BDresultURL="+ workerRuntime.getWorkerAddress()+" -BDcommonParams={\"env\":2}";
+                String serverIp = workerRuntime.getWorkerConfig().getServerAddress().get(0).split(":")[0]+":7707";
+                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+instanceInfo.getInstanceId()+" -BDtaskID="+instanceInfo.getJobId()+" -BDresultURL="+ serverIp +" -BDcommonParams={\"env\":2}";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");

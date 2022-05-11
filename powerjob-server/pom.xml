@@ -43,7 +43,7 @@
         <fastjson.version>1.2.68</fastjson.version>
         <dingding.version>1.0.1</dingding.version>
         <vertx-web.version>4.0.2</vertx-web.version>
-
+        <hutool.version>5.7.21</hutool.version>
         <!-- skip this module when deploying. -->
         <maven.deploy.skip>true</maven.deploy.skip>
 
@@ -85,6 +85,11 @@
                 <groupId>tech.powerjob</groupId>
                 <artifactId>powerjob-server-starter</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

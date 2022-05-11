@@ -3,6 +3,7 @@ package tech.powerjob.server.web.controller;
 import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.OpenAPIConstant;
 import tech.powerjob.common.PowerQuery;
+import tech.powerjob.common.exception.PowerJobException;
 import tech.powerjob.common.request.http.SaveJobInfoRequest;
 import tech.powerjob.common.request.http.SaveWorkflowNodeRequest;
 import tech.powerjob.common.request.http.SaveWorkflowRequest;
@@ -10,6 +11,7 @@ import tech.powerjob.common.request.query.JobInfoQuery;
 import tech.powerjob.common.response.*;
 import tech.powerjob.server.core.service.WindfarmService;
 import tech.powerjob.server.persistence.external.WfDO;
+import tech.powerjob.server.persistence.remote.model.AppInfoDO;
 import tech.powerjob.server.persistence.remote.model.WorkflowInfoDO;
 import tech.powerjob.server.persistence.remote.model.WorkflowNodeInfoDO;
 import tech.powerjob.server.core.service.AppInfoService;
@@ -18,12 +20,14 @@ import tech.powerjob.server.core.service.JobService;
 import tech.powerjob.server.core.instance.InstanceService;
 import tech.powerjob.server.core.workflow.WorkflowInstanceService;
 import tech.powerjob.server.core.workflow.WorkflowService;
+import tech.powerjob.server.persistence.remote.repository.AppInfoRepository;
 import tech.powerjob.server.web.response.WorkflowInfoVO;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 开放接口（OpenAPI）控制器，对接 oms-client
@@ -47,7 +51,8 @@ public class OpenAPIController {
     private WorkflowInstanceService workflowInstanceService;
     @Resource
     private WindfarmService windfarmService;
-
+    @Resource
+    private AppInfoRepository appInfoRepository;
     @Resource
     private CacheService cacheService;
 
@@ -131,6 +136,15 @@ public class OpenAPIController {
         return ResultDTO.success(jobService.runJob(appId, jobId, instanceParams, delay));
     }
 
+    @PostMapping(OpenAPIConstant.START_JOB)
+    public ResultDTO<Long> startJob(String appName, Long jobId, @RequestParam(required = false) String instanceParams, @RequestParam(required = false) Long delay) {
+        AppInfoDO appInfoDO = appInfoRepository.findByAppName(appName).orElseThrow(() -> new PowerJobException("can't find appInfo by appName: " + appName));
+        checkJobIdValid(jobId, appInfoDO.getId());
+        return ResultDTO.success(jobService.runJob(appInfoDO.getId(), jobId, instanceParams, delay));
+    }
+
+
+
     /* ************* Instance 区 ************* */
 
     @PostMapping(OpenAPIConstant.STOP_INSTANCE)
@@ -210,6 +224,12 @@ public class OpenAPIController {
     @PostMapping(OpenAPIConstant.RUN_WORKFLOW)
     public ResultDTO<Long> runWorkflow(Long workflowId, Long appId, @RequestParam(required = false) String initParams, @RequestParam(required = false) Long delay) {
         return ResultDTO.success(workflowService.runWorkflow(workflowId, appId, initParams, delay));
+    }
+
+    @PostMapping(OpenAPIConstant.START_WORKFLOW)
+    public ResultDTO<Long> startWorkflow(Long workflowId, String appName, @RequestParam(required = false) String initParams, @RequestParam(required = false) Long delay) {
+        AppInfoDO appInfoDO = appInfoRepository.findByAppName(appName).orElseThrow(() -> new PowerJobException("can't find appInfo by appName: " + appName));
+        return ResultDTO.success(workflowService.runWorkflow(workflowId, appInfoDO.getId(), initParams, delay));
     }
 
     @PostMapping(OpenAPIConstant.SAVE_WORKFLOW_NODE)
