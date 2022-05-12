@@ -2,6 +2,8 @@ package tech.powerjob.common;
 
 public class EnvConstant {
 
+    public static final String FILTER_STR = "{filterStr}";
+
     private static final String HOME = "/home";
 
     private static final String ROOT = HOME + "/pandoraJob/env";
@@ -10,10 +12,15 @@ public class EnvConstant {
 
     private static final String JDK8_PATH = ROOT + "/jdk1.8";
 
-    private static final String killCommand = "#!/bin/sh \n" +
+    /*private static final String killCommand = "#!/bin/sh \n" +
             " if [ `ps ax |grep -v grep |grep '%s' |awk '{print $1}'`\"a\" = \"a\" ] ;" +
             "then  echo \"no pid to kill\"; " +
-            "else kill -9 `ps ax |grep -v grep |grep '%s' |awk '{print $1}'`; fi";
+            "else kill -9 `ps ax |grep -v grep |grep '%s' |awk '{print $1}'`; fi";*/
+
+    private static final String killCommand = "#!/bin/sh \n" +
+            "name=" + FILTER_STR +"\n"+
+            "if [ `ps ax |grep -v grep |grep $name |awk '{print $1}'`\"a\" = \"a\" ] ;then  echo \"no pid to kill\"; else kill -9 `ps ax |grep -v grep |grep $name |awk '{print $1}'`; fi";
+
 
 
     public static String getJdk7Command(){

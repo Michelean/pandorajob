@@ -150,7 +150,8 @@ public class InstanceService {
                                         .replaceAll("\"","\\.")
                                         .replaceAll("'","\\.");
 
-                        jobInfo.setProcessorInfo(String.format(EnvConstant.getKillCommand(), processorInfo, processorInfo));
+                        jobInfo.setProcessorInfo(EnvConstant.getKillCommand().replace(EnvConstant.FILTER_STR, "." +processorInfo + "." ));
+                        log.info(jobInfo.getProcessorInfo());
                         String instanceParams = instanceInfo.getInstanceParams();
                         jobInfo.setDesignatedWorkers(instanceInfo.getTaskTrackerAddress());
                         Long newInsId = this.create(jobInfo.getId(), jobInfo.getAppId(), jobInfo.getJobParams(), instanceParams, null, System.currentTimeMillis() + Math.max(0L, 0), InstanceActiveType.USELESS.getV());
