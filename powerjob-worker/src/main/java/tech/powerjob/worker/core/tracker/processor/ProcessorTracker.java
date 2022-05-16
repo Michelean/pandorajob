@@ -18,6 +18,7 @@ import tech.powerjob.common.request.ServerDeployContainerRequest;
 import tech.powerjob.common.utils.CommonUtils;
 import tech.powerjob.common.utils.ZipAndRarTools;
 import tech.powerjob.worker.common.WorkerRuntime;
+import tech.powerjob.worker.common.constants.DockerExecConstant;
 import tech.powerjob.worker.common.constants.TaskStatus;
 import tech.powerjob.worker.common.utils.AkkaUtils;
 import tech.powerjob.worker.common.utils.IpUtil;
@@ -423,7 +424,7 @@ public class ProcessorTracker {
         StringBuffer sb = new StringBuffer();
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
-                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+"222"+" -BDtaskID="+"1"+" -BDresultURL="+ IpUtil.getLocalIp4Address().get().toString().replaceAll("/","")+" -BDcommonParams={\"env\":2}";
+                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=iphm -BDapplicationUserPassword=iphm -BDjobRecordID="+"222"+" -BDtaskID="+"1"+" -BDresultURL="+ IpUtil.getLocalIp4Address().get().toString().replaceAll("/","")+" -BDcommonParams={\"env\":2}";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
@@ -456,7 +457,7 @@ public class ProcessorTracker {
         if(StringUtils.isNotBlank(jobParams)){
             if(jobParams.contains("-BD")){
                 String serverIp = workerRuntime.getWorkerConfig().getServerAddress().get(0).split(":")[0]+":7707";
-                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=dxj -BDapplicationUserPassword=123456 -BDjobRecordID="+instanceInfo.getInstanceId()+" -BDtaskID="+instanceInfo.getJobId()+" -BDresultURL="+ serverIp +" -BDcommonParams={\"env\":2}";
+                jobParams += " \"-BDrunDate="+DateFormatUtils.format(new Date(),"yyyy-MM-dd HH:mm:ss")+"\" -BDenterpriseID=1 -BDapplicationUserID=iphm -BDapplicationUserPassword=iphm -BDjobRecordID="+instanceInfo.getInstanceId()+" -BDtaskID="+instanceInfo.getJobId()+" -BDresultURL="+ serverIp +" -BDcommonParams={\"env\":2}";
             }else{
                 //不去空格
                 jobParams = jobParams.replaceAll("(\\r\\n|\\n|\\n\\r)", "").replaceAll("\"", "'");
@@ -489,7 +490,11 @@ public class ProcessorTracker {
             case "py":
             case "pyc":
                 if(isLinux){
-                    sb.insert(0, "python3 " + scriptFilePath);
+                    String command = String.format(DockerExecConstant.PYTHON,scriptFilePath.substring(0, scriptFilePath.lastIndexOf("/")),scriptFilePath);
+
+
+//                    sb.insert(0, "python3 " + scriptFilePath);
+                    sb.insert(0, command);
                     log.warn("command:{}", sb.toString());
                     processor = new ShellProcessor(instanceId, sb.toString(), instanceInfo.getInstanceTimeoutMS());
                 }else{
